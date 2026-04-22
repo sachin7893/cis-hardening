@@ -4,10 +4,10 @@ const OS_OPTIONS = [
   { label: "Linux", value: "linux" },
   { label: "Windows", value: "windows" }
 ];
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 function buildApiUrl(path) {
-  return `${API_BASE_URL}${path}`;
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 }
 
 function sleep(ms) {
