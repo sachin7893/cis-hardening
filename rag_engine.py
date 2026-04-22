@@ -1,6 +1,7 @@
 import os
 import re
 from difflib import SequenceMatcher
+from pathlib import Path
 from dotenv import load_dotenv
 import boto3
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -17,19 +18,32 @@ from langchain_classic.chains.combine_documents.stuff import create_stuff_docume
 from langchain_classic.chains.retrieval import create_retrieval_chain
 
 # Configuration
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 api_key = os.getenv("OPENAI_API_KEY")
 CHROMA_PATH = "./chroma_db"
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
 _EMBEDDINGS = None
-# Ensure your AWS credentials are set in environment variables or ~/.aws/credentials
 REGION = os.getenv("AWS_REGION", "ap-south-1")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
 BEDROCK_BASE_MODEL_ID = os.getenv("BEDROCK_BASE_MODEL_ID", BEDROCK_MODEL_ID)
 BEDROCK_INFERENCE_PROFILE_ID = os.getenv("BEDROCK_INFERENCE_PROFILE_ID")
 
 def get_bedrock_client():
-    return boto3.client("bedrock-runtime", region_name=REGION)
+    client_kwargs = {"region_name": REGION}
+
+    # Prefer repo-local credentials from `.env` so the app does not depend on
+    # a machine-specific AWS CLI profile. Falls back to boto3's default chain.
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        client_kwargs["aws_access_key_id"] = AWS_ACCESS_KEY_ID
+        client_kwargs["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
+        if AWS_SESSION_TOKEN:
+            client_kwargs["aws_session_token"] = AWS_SESSION_TOKEN
+
+    return boto3.client("bedrock-runtime", **client_kwargs)
 
 
 def get_embeddings():

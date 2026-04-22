@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,7 @@ const repoRoot = path.resolve(frontendDir, "..");
 const venvPython = path.join(repoRoot, "venv", "Scripts", "python.exe");
 const appPy = path.join(repoRoot, "app.py");
 const viteCmd = path.join(frontendDir, "node_modules", ".bin", "vite.cmd");
+const isWindows = os.platform() === "win32";
 
 if (!existsSync(venvPython)) {
   console.error(`Virtual environment Python was not found at ${venvPython}`);
@@ -77,4 +79,10 @@ process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
 spawnLoggedProcess(venvPython, [appPy], { cwd: repoRoot }, "Flask backend");
-spawnLoggedProcess(viteCmd, [], { cwd: frontendDir }, "Vite dev server");
+
+if (isWindows) {
+  // `.cmd` launchers need to run through `cmd.exe` when using spawn on Windows.
+  spawnLoggedProcess("cmd.exe", ["/c", viteCmd], { cwd: frontendDir }, "Vite dev server");
+} else {
+  spawnLoggedProcess(viteCmd, [], { cwd: frontendDir }, "Vite dev server");
+}
