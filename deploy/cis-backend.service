@@ -1,0 +1,15 @@
+[Unit]
+Description=CIS Hardening Flask Backend
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/cis
+EnvironmentFile=/home/ubuntu/cis/.env
+ExecStart=/home/ubuntu/cis/venv/bin/gunicorn --workers 2 --threads 4 --bind 127.0.0.1:5000 wsgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -10,6 +10,27 @@ function buildApiUrl(path) {
   return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 }
 
+async function readJsonResponse(response, fallbackMessage) {
+  const contentType = response.headers.get("content-type") || "";
+  const rawBody = await response.text();
+
+  if (!contentType.includes("application/json")) {
+    if (rawBody.trim().toLowerCase().startsWith("<!doctype") || rawBody.trim().startsWith("<")) {
+      throw new Error(
+        "API endpoint returned HTML instead of JSON. Check that `/api` is routed to the Flask backend in production."
+      );
+    }
+
+    throw new Error(fallbackMessage);
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch {
+    throw new Error(fallbackMessage);
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -47,7 +68,7 @@ function App() {
 
       try {
         const response = await fetch(buildApiUrl(`/api/controls?os_type=${osType}`));
-        const data = await response.json();
+        const data = await readJsonResponse(response, "Failed to load controls.");
 
         if (!response.ok) {
           throw new Error(data.error || "Failed to load controls.");
@@ -95,7 +116,7 @@ function App() {
         method: "POST",
         body: formData
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response, "Unable to ingest document.");
 
       if (!response.ok) {
         throw new Error(data.error || "Unable to ingest document.");
@@ -117,7 +138,7 @@ function App() {
 
     try {
       const response = await fetch(buildApiUrl(`/api/controls?os_type=${osType}`));
-      const data = await response.json();
+      const data = await readJsonResponse(response, "Failed to refresh controls.");
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to refresh controls.");
@@ -154,7 +175,7 @@ function App() {
           os_type: osType
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response, "Unable to generate snippet.");
 
       if (!response.ok) {
         throw new Error(data.error || "Unable to generate snippet.");
@@ -187,7 +208,7 @@ function App() {
           os_type: osType
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response, "Unable to build master script.");
 
       if (!response.ok) {
         throw new Error(data.error || "Unable to build master script.");
@@ -203,7 +224,10 @@ function App() {
         await sleep(1000);
 
         const statusResponse = await fetch(buildApiUrl(`/api/master-script/${jobId}`));
-        const statusData = await statusResponse.json();
+        const statusData = await readJsonResponse(
+          statusResponse,
+          "Unable to fetch master script progress."
+        );
 
         if (!statusResponse.ok) {
           throw new Error(statusData.error || "Unable to fetch master script progress.");
