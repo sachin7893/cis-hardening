@@ -239,4 +239,6 @@ def serve_static(path):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    port = int(os.getenv("PORT", "5000"))
+    debug = os.getenv("FLASK_DEBUG", "").strip().lower() in {"1", "true", "yes"}
+    app.run(debug=debug, host="0.0.0.0", port=port)

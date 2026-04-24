@@ -21,7 +21,7 @@ from langchain_classic.chains.retrieval import create_retrieval_chain
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 api_key = os.getenv("OPENAI_API_KEY")
-CHROMA_PATH = "./chroma_db"
+CHROMA_PATH = os.getenv("CHROMA_PATH", str(BASE_DIR / "chroma_db"))
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
 _EMBEDDINGS = None
 REGION = os.getenv("AWS_REGION", "ap-south-1")

@@ -1,0 +1,64 @@
+{
+  "family": "cis-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<account-id>:role/cisBackendTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "cis-backend",
+      "image": "<account-id>.dkr.ecr.<region>.amazonaws.com/cis-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "5000" },
+        { "name": "CHROMA_PATH", "value": "/mnt/data/chroma_db" },
+        { "name": "AWS_REGION", "value": "ap-south-1" },
+        { "name": "BEDROCK_MODEL_ID", "value": "amazon.nova-lite-v1:0" },
+        { "name": "BEDROCK_BASE_MODEL_ID", "value": "amazon.nova-lite-v1:0" },
+        { "name": "BEDROCK_INFERENCE_PROFILE_ID", "value": "apac.amazon.nova-lite-v1:0" }
+      ],
+      "secrets": [
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<region>:<account-id>:secret:cis/openai-api-key"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "persistent-data",
+          "containerPath": "/mnt/data",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cis-backend",
+          "awslogs-region": "<region>",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "volumes": [
+    {
+      "name": "persistent-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "fs-xxxxxxxx",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "fsap-xxxxxxxx",
+          "iam": "ENABLED"
+        }
+      }
+    }
+  ]
+}
